@@ -152,6 +152,19 @@
         .roc-picker .lunar-preview-bar .toggle-btn { padding:10px 14px; background:#f0f2f5; border:1.5px solid #ccc; border-radius:10px; font-size:13px; font-weight:900; cursor:pointer; color:#666; white-space:nowrap; font-family:inherit; }
         .roc-picker .toggle-btn.active { background:var(--primary); color:white; border-color:var(--primary); }
 
+        /* 規則開關 */
+        .rules-toggle { margin-bottom: 20px; }
+        .rules-toggle-title { font-size: 14px; font-weight: 900; color: var(--text-sub); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+        .rules-toggle-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+        .rule-toggle-item { display: flex; align-items: center; gap: 6px; padding: 6px 10px; background: #f0f2f5; border: 1.5px solid #ddd; border-radius: 20px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.15s; }
+        .rule-toggle-item.on { background: var(--primary-light); border-color: var(--primary); color: var(--primary); }
+        .rule-toggle-item.off { opacity: 0.5; }
+        .rule-toggle-item input { display: none; }
+        .rule-toggle-track { width: 28px; height: 15px; border-radius: 8px; background: #ccc; position: relative; transition: background 0.15s; flex-shrink: 0; }
+        .rule-toggle-item.on .rule-toggle-track { background: var(--primary); }
+        .rule-toggle-track::after { content: ''; width: 11px; height: 11px; border-radius: 50%; background: white; position: absolute; top: 2px; left: 2px; transition: left 0.15s; }
+        .rule-toggle-item.on .rule-toggle-track::after { left: 15px; }
+
         @media (min-width: 900px) {
             .main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
             .top-grid { display: grid; grid-template-columns: 420px 1fr; gap: 30px; }
@@ -256,7 +269,11 @@
                 <span class="lunar-summary" id="lunar-summary-text"></span>
                 <span class="toggle-btn active" id="toggle-roc" onclick="toggleDateSystem()">切換<span id="toggle-year-label">西元年</span></span>
             </div>
-            <button onclick="runAutoDiscovery()" style="width: 100%; padding: 18px; background: var(--secondary); color: white; border: none; border-radius: 12px; font-weight: 900; font-size: 17px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">🔍 自動掃描通書大吉日 (至 2028 年底)</button>
+            <div class="rules-toggle">
+                <div class="rules-toggle-title">📖 選擇啟用的通書規則</div>
+                <div class="rules-toggle-grid" id="rules-toggle-grid"></div>
+            </div>
+            <button onclick="runAutoDiscovery(); renderRulesToggle();" style="width: 100%; padding: 18px; background: var(--secondary); color: white; border: none; border-radius: 12px; font-weight: 900; font-size: 17px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">🔍 自動掃描通書大吉日 (至 2028 年底)</button>
         </div>
 
         <!-- 自動報告 -->
@@ -312,6 +329,19 @@
     <script>
         let currentMode = 'wendian';
         let currentDate = new Date();
+
+        // 規則開關（全部預設開）
+        const ENABLED_RULES = {
+            hangjiaYue: true,   // 行嫁月（碎金賦）
+            zhouTang: true,     // 周堂（象吉/玉匣）
+            zhuWei: true,       // 主位六沖三刑六害（十傳通書）
+            jianchu: true,     // 建除+彭祖（協紀辨方書）
+            suiPo: true,       // 歲破月破（協紀辨方書）
+            fuYin: true,       // 伏吟反吟（永寧通書）
+            hongSha: true,     // 紅砂（永寧通書）
+            taoHua: true,       // 桃花煞（天機蠡書）
+            hongLuan: true,     // 紅鸞天喜（天機蠡書）
+        };
 
         const DZ_MAP = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
         const APP_CONFIG = {
@@ -446,6 +476,43 @@
                 `<span style="color:#666;font-weight:normal;">農曆 </span>${lunar.getMonthInChinese()}月${lunar.getDayInChinese()}<span style="margin-left:12px;color:#666;font-weight:normal;">歲次 </span>${lunar.getYearInChinese()}`;
             bar.style.display = 'flex';
             updateToggleBtn();
+        }
+
+        const RULE_LABELS = {
+            hangjiaYue: '行嫁月',
+            zhouTang: '周堂',
+            zhuWei: '主位沖煞',
+            jianchu: '建除・彭祖',
+            suiPo: '歲破・月破',
+            fuYin: '伏吟反吟',
+            hongSha: '紅砂',
+            taoHua: '桃花煞',
+            hongLuan: '紅鸞天喜',
+        };
+
+        function renderRulesToggle() {
+            const grid = document.getElementById('rules-toggle-grid');
+            if (!grid) return;
+            let html = '';
+            for (const [key, label] of Object.entries(RULE_LABELS)) {
+                const on = ENABLED_RULES[key];
+                html += `<label class="rule-toggle-item ${on ? 'on' : 'off'}" for="rule-${key}">
+                    <input type="checkbox" id="rule-${key}" ${on ? 'checked' : ''} onchange="toggleRule('${key}')">
+                    <span class="rule-toggle-track"></span>
+                    ${label}
+                </label>`;
+            }
+            grid.innerHTML = html;
+        }
+
+        function toggleRule(key) {
+            ENABLED_RULES[key] = !ENABLED_RULES[key];
+            const item = document.querySelector(`[for="rule-${key}"]`);
+            if (item) {
+                item.classList.toggle('on', ENABLED_RULES[key]);
+                item.classList.toggle('off', !ENABLED_RULES[key]);
+            }
+            updateUI();
         }
 
         function onYearTextInput(el) {
@@ -601,6 +668,7 @@
             const lunar = pillars.lunarInfo;
             let score = 100, veto = false, notes = [];
 
+            if (ENABLED_RULES.hangjiaYue) {
             // 1. 《碎金賦》行嫁月精算——歌曰「正七迎雞兔，二八虎和猴，三九蛇與豬，四十龍和狗，牛羊五一十一十二各」
             //    正七(寅申月)大利卯酉、二八(卯酉月)大利寅申、三九(辰戌月)大利巳亥、
             //    四十(巳亥月)大利辰戌、五一(午子月)大利丑未、六十二(未丑月)大利子午
@@ -619,8 +687,10 @@
             else if (["寅","申"].includes(monthName)) { score -= 20; haili = { t: "當前屬【妨父母月】，對女方主婚人氣場不利，宜慎重考量，盡量避免。", c: "danger" }; }
             else if (["午","子"].includes(monthName)) { score -= 35; veto = true; haili = { t: "當前屬【妨女身月】，對新娘本命氣場大凶，《碎金賦》明令禁止！絕對不可成婚。", c: "danger" }; }
             else if (["巳","亥"].includes(monthName)) { score -= 35; veto = true; haili = { t: "當前屬【妨夫主月】，對新郎本命氣場大凶，《碎金賦》明令禁止！絕對不可成婚。", c: "danger" }; }
-            if (mode !== 'anchuang') notes.push({ title: "碎金賦行嫁月", text: haili.t, type: haili.c, source: "《碎金賦》女命行嫁月口訣" });
+            if (mode !== 'anchuang') notes.push({ title: "碎金賦行嫁月", text: haili.t, type: haili.c, source: "《碎金賦》女命行嫁月口诀" });
+            }
 
+            if (ENABLED_RULES.zhouTang) {
             // 2. 《象吉通書》嫁娶/安床周堂——精算大小月順逆行
             const chineseDay = lunar.getDay();
             const lm = LunarMonth.fromYm(lunar.getYear(), lunar.getMonth());
@@ -641,7 +711,9 @@
                 else if (acVal === "門") { score -= 30; notes.push({ title: "安床周堂次煞", text: `農曆${chineseDay}日，${moonLabel}，安床周堂值【門】位，有衝動引動，宜迴避或另擇吉日。`, type: "warning", source: "《玉匣記》安床周堂局" }); }
                 else { notes.push({ title: "安床周堂", text: `農曆${chineseDay}日，${moonLabel}，安床周堂值【${acVal}】位，無明顯煞氣，可用。`, type: "success", source: "《玉匣記》安床周堂局" }); }
             }
+            }
 
+            if (ENABLED_RULES.zhuWei) {
             // 3. 《十傳通書》主位沖煞——六沖、三刑（精確）、六害、六合、天干五克、五合
             let chongText = "", bonusText = "", isChong = false, hasBonus = false;
             const TG_KE = { "甲":"庚","乙":"辛","丙":"壬","丁":"癸","戊":"甲","己":"乙","庚":"丙","辛":"丁","壬":"戊","癸":"己" };
@@ -689,7 +761,9 @@
             if (isChong) notes.push({ title: "主位四柱嚴謹沖煞", text: chongText, type: veto ? "danger" : "warning", source: "《十傳通書》六沖・三刑・六害判定" });
             else notes.push({ title: "主位四柱沖煞", text: "六位主婚人八字與日柱無沖刑害，氣場穩定。", type: "success", source: "《十傳通書》六沖・三刑・六害判定" });
             if (hasBonus) notes.push({ title: "主位吉合感應", text: bonusText, type: "success", source: "《十傳通書》地支六合・天干五合判定" });
+            }
 
+            if (ENABLED_RULES.jianchu) {
             // 4. 《協紀辨方書》十二建除値星 + 《彭祖百忌》亥日禁嫁
             // 《協紀辨方書》十二建除黃黑道分類：
             // 黃道吉日（9）：除、定、執、成、滿、平、收、危、开
@@ -700,7 +774,7 @@
             let jianchuClass = "success";
             if (pillars.dz === "亥" && mode !== 'anchuang') {
                 veto = true; score = Math.min(score, 20); jianchuClass = "danger";
-                jianchuText = "《彭祖百忌》明載：『亥不嫁娶，不利婚配。』今日為亥日，婚慶嫁娶絕對禁忌，不得違犯！";
+                jianchuText = "《彭祖百忌》明載：「亥不嫁娶，不利婚配。」今日為亥日，婚慶嫁娶絕對禁忌，不得違犯！";
             } else if (["破","閉"].includes(pillars.jianchu)) {
                 veto = true; score = Math.min(score, 20); jianchuClass = "danger";
                 jianchuText = `今日值【${pillars.jianchu}日】，屬《協紀辨方書》黑道凶日，諸事不宜，嫁娶安床俱為大忌。`;
@@ -712,10 +786,12 @@
                 jianchuText = "今日值【建日】，《協紀辨方書》建日宜出行赴任，不宜嫁娶婚配，宜慎重考量。";
             } else {
                 jianchuClass = "warning";
-                jianchuText = `今日值【${pillars.jianchu}日】，屬建除中性日，宜慎重，其他通書條件若佳仍可考量。`;
+                jianchuText = `今日值【${pillars.jianchu}日】，氣場一般，婚嫁尚可，需注意其它規則。`;
             }
-            notes.push({ title: "協紀辨方書・建除値星", text: jianchuText, type: jianchuClass, source: "《協紀辨方書》十二值星 ＋ 《彭祖百忌》" });
+            notes.push({ title: "協紀辨方書・建除値星", text: jianchuText, type: jianchuClass, source: "《協紀辨方書》十二建除及《彭祖百忌》亥日判定" });
+            }
 
+            if (ENABLED_RULES.suiPo) {
             // 5b. 《協紀辨方書》歲破・月破神煞
             const monthDzIdx = DZ_MAP.indexOf(pillars.monthGZ.substring(1));
             const suePoIdx = (pillars.yearDzIdx + 6) % 12;
@@ -733,11 +809,13 @@
                 veto = true; score = 0;
                 notes.push({ title: "月三煞方位大忌", text: `今日觸犯【${pillars.ssReason}】，若床頭或門向朝此方位，《玉匣記》明令大凶，必須迴避，另擇吉日！`, type: "danger", source: "《玉匣記》三煞方位判定" });
             }
+            }
 
+            if (ENABLED_RULES.fuYin) {
             // ─────────────────────────────────────────────
             // 6. 《永寧通書》伏吟・反吟》
             // 伏吟：流年柱 = 主婚人生年柱（干支皆同），歲運重疊，大凶
-            // 反吟：流年柱與主婚人生年柱「沖且克」（地支相沖，天干相克），主位動盪，凶
+            // 反吟：流年柱與主婚人生年柱「沖且克」（地支相沖，天干相剋），主位動盪，凶
             // ─────────────────────────────────────────────
             const fuyinText_list = [], fanshiText_list = [];
             const TG_IDX = "甲乙丙丁戊己庚辛壬癸";
@@ -747,7 +825,7 @@
                 if (h.gz === pillars.yearGZ) {
                     fuyinText_list.push(h.name);
                 }
-                // 反吟：支沖（+6位）且干相克
+                // 反吟：支沖（+6位）且干相剋
                 const hDz = DZ_MAP.indexOf(h.gz.substring(1));
                 const dDz = DZ_MAP.indexOf(pillars.yearGZ.substring(1));
                 if ((hDz + 6) % 12 === dDz) {
@@ -768,11 +846,13 @@
                 score = Math.min(score, 20);
                 notes.push({ title: "永寧通書・歲運反吟", text: `${fanshiText_list.join("、")}之年柱與流年柱（${pillars.yearGZ}）相沖且相剋，《永寧通書》謂之【反吟】，主位動盪，嫁娶凶。`, type: "warning", source: "《永寧通書》伏吟反吟判定" });
             }
+            }
 
+            if (ENABLED_RULES.hongSha) {
             // ─────────────────────────────────────────────
             // 7. 《永寧通書》紅砂大煞
             // 歌曰：「正四七十月逢辛，二三五八十一十二月逢丁，九月逢丙。」
-            // 即：辛卯、辛午、辛酉；丁卯、丁午、丁酉；丙午——共九個紅砂日
+            // 即：辛卯、辛午、辛酉；丁卯、丁午、丁酉；丙午——共9個（實作7個）
             // 紅砂為大凶日，嫁娶一票否決
             // ─────────────────────────────────────────────
             const RED_SAND_COMBOS = [
@@ -785,7 +865,9 @@
                 veto = true; score = 0;
                 notes.push({ title: "永寧通書・紅砂大煞", text: `今日干支【${pillars.gz}】，為《永寧通書》紅砂大煞日，嫁娶一票否決，絕對不可！`, type: "danger", source: "《永寧通書》紅砂日口诀「正四七十月逢辛，二三五八十一十二月逢丁，九月逢丙」" });
             }
+            }
 
+            if (ENABLED_RULES.taoHua) {
             // ─────────────────────────────────────────────
             // 8. 《天機蠡書》桃花煞
             // 歌曰：「寅午戌在卯，申子辰在酉，亥卯未在子，巳酉丑在午」
@@ -802,7 +884,9 @@
                 score -= 15;
                 notes.push({ title: "天機蠡書・桃花煞", text: `今日日支【${pillars.dz}】，桃花在【${taohuaDz}】位，${label} 之命卦帶桃花，婚嫁有感情糾葛或口舌是非之象。`, type: "warning", source: "《天機蠡書》桃花煞歌「寅午戌在卯，申子辰在酉，亥卯未在子，巳酉丑在午」" });
             }
+            }
 
+            if (ENABLED_RULES.hongLuan) {
             // ─────────────────────────────────────────────
             // 9. 《天機蠡書》紅鸞・天喜
             // 歌曰：「紅鸞辰與酉，天喜合同居」
@@ -814,6 +898,7 @@
             if (hongluanHits.length > 0) {
                 score += 20;
                 notes.push({ title: "天機蠡書・紅鸞天喜", text: `今日日支【${pillars.dz}】，紅鸞天喜星均在【辰】【酉】兩宮，《天機蠡書》謂「紅鸞辰與酉，天喜合同居」，${hongluanHits.map(h=>`${h.name}(${h.gz})`).join("、")} 之命卦帶雙吉星，嫁娶添丁、姻緣美合、諸事大吉。`, type: "pass", source: "《天機蠡書》紅鸞歌「紅鸞辰與酉，天喜合同居」" });
+            }
             }
 
             if (score > 100) score = 100; if (score < 0) score = 0;
@@ -946,6 +1031,7 @@
             renderHostCards();
             document.getElementById("wedding-date").value = formatDateString(currentDate);
             updateUI();
+            renderRulesToggle();
         };
     </script>
 </body>
