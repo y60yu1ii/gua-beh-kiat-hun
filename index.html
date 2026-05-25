@@ -143,6 +143,10 @@
         .roc-picker-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
         .roc-picker select { flex:1; padding:12px 6px; border:1.5px solid #ccc; border-radius:10px; font-size:16px; font-weight:900; color:var(--primary); background:white; font-family:inherit; cursor:pointer; -webkit-appearance:none; appearance:none; text-align:center; }
         .roc-picker select:focus { border-color:var(--primary); outline:none; }
+        .roc-picker-row input.roc-year-input { flex:1; padding:12px 8px; border:1.5px solid #ccc; border-radius:10px; font-size:16px; font-weight:900; color:var(--primary); background:white; font-family:inherit; text-align:center; -moz-appearance:textfield; }
+        .roc-picker-row input.roc-year-input::-webkit-inner-spin-button, .roc-picker-row input.roc-year-input::-webkit-outer-spin-button { -webkit-appearance:none; }
+        .roc-picker-row input.roc-year-input:focus { border-color:var(--primary); outline:none; }
+        .roc-picker-row input.roc-year-input::placeholder { color:#ccc; font-weight:normal; font-size:14px; }
         .roc-picker .lunar-preview-bar { display:flex; align-items:center; gap:8px; }
         .roc-picker .lunar-preview-bar .lunar-summary { flex:1; padding:10px 12px; background:var(--primary-light); border:1.5px solid #ccc; border-radius:10px; font-size:14px; font-weight:900; color:var(--primary); }
         .roc-picker .lunar-preview-bar .toggle-btn { padding:10px 14px; background:#f0f2f5; border:1.5px solid #ccc; border-radius:10px; font-size:13px; font-weight:900; cursor:pointer; color:#666; white-space:nowrap; font-family:inherit; }
@@ -401,7 +405,6 @@
         }
 
         function toROC(dateObj) { return dateObj.getUTCFullYear() - 1911; }
-        function fromROC(rocYear, month, day) { return new Date(Date.UTC(rocYear + 1911, month, day)); }
 
         function buildRocPicker() {
             const picker = document.getElementById('roc-picker');
@@ -409,16 +412,15 @@
             const y = currentDate.getUTCFullYear();
             const m = currentDate.getUTCMonth();
             const d = currentDate.getUTCDate();
+            const isRoc = document.getElementById('toggle-roc').classList.contains('active');
+
             const rocY = toROC(currentDate);
+            const displayYear = isRoc ? rocY : y;
+            const placeholder = isRoc ? '例：115' : '例：2026';
 
             let html = '<div class="roc-picker-row">';
-            // 年（西元）
-            html += `<select id="roc-year" onchange="onRocPickerChange()">`;
-            for (let yy = 1950; yy <= 2030; yy++) {
-                const sel = (yy === y) ? ' selected' : '';
-                html += `<option value="${yy}"${sel}>${yy}年</option>`;
-            }
-            html += `</select>`;
+            // 年：文字輸入（支援直接打民國年或加前綴 ad: 打法）
+            html += `<input type="text" id="roc-year" class="roc-year-input" value="${displayYear}" placeholder="${placeholder}" oninput="onYearTextInput(this)" onblur="onYearBlur()">`;
             // 月（西元數字）
             html += `<select id="roc-month" onchange="onRocPickerChange()">`;
             for (let mm = 1; mm <= 12; mm++) {
@@ -446,8 +448,65 @@
             updateToggleBtn();
         }
 
+        function onYearTextInput(el) {
+            // 即時解析：若使用者打法（民國，直接數字）或 ad:2026（西元前綴）
+            const val = el.value.trim();
+            let adYear = null;
+            if (val.startsWith('ad:') || val.startsWith('AD:')) {
+                adYear = parseInt(val.slice(3));
+            } else if (/^\d+$/.test(val)) {
+                adYear = parseInt(val) + 1911;
+            }
+            if (adYear && adYear >= 1900 && adYear <= 2030) {
+                // 即時更新日（若跨月會順便更新）
+                onYearAd(adYear);
+            }
+        }
+
+        function onYearBlur() {
+            // 失焦時完整解析一次，確保狀態正確
+            const el = document.getElementById('roc-year');
+            if (!el) return;
+            const val = el.value.trim();
+            const isRoc = document.getElementById('toggle-roc').classList.contains('active');
+            let adYear;
+            if (val.startsWith('ad:') || val.startsWith('AD:')) {
+                adYear = parseInt(val.slice(3));
+            } else if (/^\d+$/.test(val)) {
+                adYear = isRoc ? parseInt(val) + 1911 : parseInt(val);
+            } else {
+                // 無效輸入，重刷為目前值
+                buildRocPicker(); return;
+            }
+            if (adYear && adYear >= 1900 && adYear <= 2030) {
+                onYearAd(adYear);
+            } else {
+                buildRocPicker();
+            }
+        }
+
+        function onYearAd(adYear) {
+            const m = currentDate.getUTCMonth();
+            const d = currentDate.getUTCDate();
+            const daysInMonth = new Date(Date.UTC(adYear, m + 1, 0)).getUTCDate();
+            const safeDay = Math.min(d, daysInMonth);
+            currentDate = new Date(Date.UTC(adYear, m, safeDay));
+            updateUI();
+            updateRocDayOptions();
+        }
+
         function onRocPickerChange() {
-            const y = parseInt(document.getElementById('roc-year').value);
+            const isRoc = document.getElementById('toggle-roc').classList.contains('active');
+            let y;
+            const yearEl = document.getElementById('roc-year');
+            const yearVal = yearEl ? yearEl.value.trim() : '';
+            if (yearVal.startsWith('ad:') || yearVal.startsWith('AD:')) {
+                y = parseInt(yearVal.slice(3));
+            } else if (/^\d+$/.test(yearVal)) {
+                y = isRoc ? parseInt(yearVal) + 1911 : parseInt(yearVal);
+            } else {
+                y = currentDate.getUTCFullYear();
+            }
             const m = parseInt(document.getElementById('roc-month').value) - 1;
             const d = parseInt(document.getElementById('roc-day').value);
             currentDate = new Date(Date.UTC(y, m, d));
@@ -456,16 +515,17 @@
         }
 
         function updateRocDayOptions() {
-            const y = parseInt(document.getElementById('roc-year').value);
-            const m = parseInt(document.getElementById('roc-month').value) - 1;
+            const y = currentDate.getUTCFullYear();
+            const m = currentDate.getUTCMonth();
             const daysInMonth = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
             const daySel = document.getElementById('roc-day');
+            if (!daySel) return;
             const curDay = parseInt(daySel.value);
             const newCur = Math.min(curDay, daysInMonth);
             daySel.innerHTML = '';
             for (let dd = 1; dd <= daysInMonth; dd++) {
                 const sel = (dd === newCur) ? ' selected' : '';
-                daySel.innerHTML += `<option value="${dd}"${sel}>${dd}日</option>`;
+                daySel.innerHTML += `<option value="${dd}">${dd}日</option>`;
             }
         }
 
@@ -474,13 +534,13 @@
             const isRoc = btn.classList.contains('active');
             btn.classList.toggle('active', !isRoc);
             updateToggleBtn();
+            buildRocPicker();
         }
 
         function updateToggleBtn() {
             const btn = document.getElementById('toggle-roc');
             const label = document.getElementById('toggle-year-label');
-            const isRoc = btn.classList.contains('active');
-            label.textContent = isRoc ? '西元年' : '民國年';
+            if (label) label.textContent = btn.classList.contains('active') ? '民國年' : '西元年';
         }
 
         function clearHosts() {
