@@ -613,19 +613,14 @@
             // ─────────────────────────────────────────────
             // 9. 《天機蠡書》紅鸞・天喜
             // 歌曰：「紅鸞辰與酉，天喜合同居」
-            // 紅鸞地支：辰(5)、酉(8)；天喜地支：酉(8)、辰(5)
-            // 紅鸞/天喜與六主地支重疊 → score += 10
+            // 紅鸞地支：辰(5)、酉(8)；天喜地支：辰(5)、酉(8)（同居同位）
+            // 紅鸞/天喜與六主地支重疊 → score += 20（合併計算，因兩星同宮）
             // ─────────────────────────────────────────────
             const HONGLUAN_DZ_IDX = [5, 8]; // 辰、酉
             const hongluanHits = APP_CONFIG.hosts.filter(h => HONGLUAN_DZ_IDX.includes(h.dzIdx));
             if (hongluanHits.length > 0) {
-                score += 10;
-                notes.push({ title: "天機蠡書・紅鸞", text: `今日日支【${pillars.dz}】，紅鸞星在【辰】【酉】位，${hongluanHits.map(h=>`${h.name}(${h.gz})`).join("、")} 之命卦帶紅鸞，嫁娶添丁、姻緣美合。`, type: "pass", source: "《天機蠡書》紅鸞歌「紅鸞辰與酉」" });
-            }
-            const tianxiHits = APP_CONFIG.hosts.filter(h => HONGLUAN_DZ_IDX.includes(h.dzIdx));
-            if (tianxiHits.length > 0) {
-                score += 10;
-                notes.push({ title: "天機蠡書・天喜", text: `今日日支【${pillars.dz}】，天喜星在【酉】【辰】位，${tianxiHits.map(h=>`${h.name}(${h.gz})`).join("、")} 之命卦帶天喜，嫁娶納采、諸事大吉。`, type: "pass", source: "《天機蠡書》天喜歌「天喜合同居」" });
+                score += 20;
+                notes.push({ title: "天機蠡書・紅鸞天喜", text: `今日日支【${pillars.dz}】，紅鸞天喜星均在【辰】【酉】兩宮，《天機蠡書》謂「紅鸞辰與酉，天喜合同居」，${hongluanHits.map(h=>`${h.name}(${h.gz})`).join("、")} 之命卦帶雙吉星，嫁娶添丁、姻緣美合、諸事大吉。`, type: "pass", source: "《天機蠡書》紅鸞歌「紅鸞辰與酉，天喜合同居」" });
             }
 
             if (score > 100) score = 100; if (score < 0) score = 0;
