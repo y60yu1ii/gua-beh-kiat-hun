@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Guá beh kiat-hun</title>
+    <style>
+        :root {
+            --primary: #8b1e0f;
+            --primary-light: #fdf2f0;
+            --secondary: #2c3e50;
+            --success: #27ae60;
+            --success-bg: #e6f4ea;
+            --warning: #d4ac0d;
+            --warning-bg: #fffdf5;
+            --danger: #dc3545;
+            --danger-bg: #fce8e6;
+            --text-main: #222;
+            --text-sub: #666;
+            --bg-body: #f4f5f6;
+            --bg-card: #ffffff;
+            --border: #ddd;
+            --radius: 12px;
+            --shadow: 0 4px 15px rgba(0,0,0,0.08);
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: -apple-system, "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            margin: 0; padding: 0;
+            line-height: 1.5;
+            overflow-x: hidden;
+        }
+
+        .header {
+            background: var(--primary);
+            color: white; padding: 22px 15px; text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header h1 { font-size: 22px; margin: 0; font-weight: 900; letter-spacing: 2px; }
+
+        .container { padding: 12px; max-width: 1200px; margin: 0 auto; }
+
+        .card {
+            background: var(--bg-card); border-radius: var(--radius);
+            padding: 20px; margin-bottom: 18px; box-shadow: var(--shadow);
+            border: 1px solid var(--border); width: 100%;
+        }
+
+        .section-title {
+            font-size: 18px; font-weight: 900; border-left: 6px solid var(--primary);
+            padding-left: 12px; margin: 25px 0 15px 4px; color: var(--primary);
+        }
+
+        /* 主婚人卡片 */
+        .host-scroll-wrapper {
+            display: flex; overflow-x: auto; gap: 12px;
+            padding: 5px 2px 15px 2px; scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+        }
+        .host-card {
+            flex: 0 0 135px; scroll-snap-align: start;
+            background: white; border: 1px solid #eee;
+            border-radius: 10px; padding: 15px 10px; text-align: center;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        }
+        .host-card.groom { border-top: 5px solid #1a5276; }
+        .host-card.bride { border-top: 5px solid var(--primary); }
+        .host-card h4 { margin: 0 0 8px 0; font-size: 16px; color: #111; }
+        .host-card .badge { 
+            background: #f0f3f6; padding: 3px 8px; border-radius: 5px;
+            font-size: 14px; font-weight: bold; display: inline-block; margin-bottom: 8px;
+        }
+        .host-card p { margin: 0; font-size: 13px; color: var(--danger); font-weight: bold; }
+        .host-card small { display: block; font-size: 11px; color: var(--warning); margin-top: 4px; font-weight: bold; }
+
+        /* Segmented Control */
+        .segmented-control {
+            display: flex; background: #eef2f7; border-radius: 12px; padding: 4px; margin-bottom: 15px;
+        }
+        .segmented-control button {
+            flex: 1; border: none; background: transparent; padding: 12px 5px;
+            font-size: 15px; font-weight: bold; color: var(--text-sub);
+            border-radius: 10px; cursor: pointer; transition: 0.2s;
+        }
+        .segmented-control button.active {
+            background: var(--primary); color: white; box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        /* 評分區 */
+        .score-box { text-align: center; padding: 30px 10px; border-radius: 20px; }
+        .score-num { font-size: 72px; font-weight: 900; line-height: 1; margin: 10px 0; color: var(--primary); }
+        .status-pill {
+            display: inline-block; padding: 8px 30px; border-radius: 30px;
+            font-size: 20px; font-weight: bold;
+        }
+        .status-pill.pass { background: var(--success-bg); color: var(--success); border: 1px solid #c3e6cb; }
+        .status-pill.fail { background: var(--danger-bg); color: var(--danger); border: 1px solid #f5c6cb; }
+
+        /* 星盤 */
+        .compass-container { text-align: center; }
+        .compass-wrapper { width: 100%; max-width: 340px; margin: 0 auto; }
+        canvas { display: block; max-width: 100%; }
+
+        /* 日曆 */
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; width: 100%; }
+        .weekday { font-size: 14px; font-weight: bold; color: var(--text-sub); text-align: center; padding-bottom: 10px; }
+        .day-cell {
+            border: 1px solid #eee; border-radius: 10px;
+            min-height: 95px; display: flex; flex-direction: column;
+            justify-content: space-between; align-items: center;
+            padding: 10px 2px; cursor: pointer; background: #fafafa;
+        }
+        .day-cell.current { border: 3px solid var(--primary); background: var(--primary-light); }
+        .day-num { font-size: 20px; font-weight: 900; }
+        .day-gz { font-size: 11px; color: #333; font-weight: 800; margin: 2px 0; }
+        .day-lunar { font-size: 10px; color: var(--text-sub); }
+        .day-tag {
+            font-size: 11px; padding: 2px 8px; border-radius: 5px; color: white;
+            font-weight: 900; width: 88%; text-align: center;
+        }
+
+        /* 典籍說明 */
+        .almanac-item {
+            border-left: 6px solid var(--border); padding: 18px;
+            margin-bottom: 15px; background: #fdfdfd; border-radius: 0 10px 10px 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+        }
+        .almanac-item.success { border-left-color: var(--success); background: #f6fff8; }
+        .almanac-item.warning { border-left-color: var(--warning); background: #fffdf5; }
+        .almanac-item.danger { border-left-color: var(--danger); background: #fef4f3; }
+        .almanac-item h5 { margin: 0 0 10px 0; font-size: 17px; font-weight: 900; color: #111; }
+        .almanac-cite { font-family: "MingLiU", "PMingLiU", serif; font-size: 15px; color: #333; line-height: 1.7; font-weight: 600; }
+        .cite-source { display: block; margin-top: 8px; color: var(--primary); font-weight: 900; font-size: 13px; }
+
+        /* 按鈕與輸入 */
+        .btn-nav { background: #f0f2f5; border: 1px solid #ddd; border-radius: 10px; padding: 12px; font-weight: 900; cursor: pointer; }
+        .date-input { flex: 1; padding: 12px; border: 1px solid #ccc; border-radius: 10px; font-size: 18px; text-align: center; font-weight: 900; color: var(--primary); }
+
+        @media (min-width: 900px) {
+            .main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+            .top-grid { display: grid; grid-template-columns: 420px 1fr; gap: 30px; }
+            .day-cell { min-height: 110px; }
+        }
+        @media (max-width: 480px) {
+            .day-cell { min-height: 80px; padding: 6px 1px; }
+            .day-num { font-size: 16px; }
+            .day-gz, .day-lunar { font-size: 9px; }
+            .score-num { font-size: 60px; }
+            .header h1 { font-size: 19px; }
+        }
+
+        /* Setup Modal */
+        #setup-modal {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+            z-index: 9999; justify-content: center; align-items: center;
+        }
+        #setup-modal.show { display: flex; }
+        .setup-card {
+            background: #fff; border-radius: 16px; padding: 32px 28px;
+            max-width: 520px; width: 92%; max-height: 90vh; overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+        }
+        .setup-card h2 { margin: 0 0 6px; color: var(--primary); font-size: 22px; }
+        .setup-card p { margin: 0 0 22px; color: #666; font-size: 14px; }
+        .host-row {
+            display: flex; align-items: center; gap: 10px; margin-bottom: 14px;
+            padding: 10px 12px; border-radius: 10px; background: var(--bg-body);
+        }
+        .host-row .role-label { font-weight: 900; font-size: 15px; min-width: 56px; color: var(--text-main); }
+        .host-row input[type="date"] {
+            flex: 1; padding: 7px 10px; border: 1.5px solid var(--border);
+            border-radius: 8px; font-size: 14px; font-family: inherit;
+        }
+        .host-row .lunar-preview {
+            min-width: 90px; padding: 7px 10px; background: #fff;
+            border: 1.5px solid var(--border); border-radius: 8px;
+            font-size: 13px; color: var(--primary); font-weight: 700;
+            text-align: center;
+        }
+        .setup-save-btn {
+            width: 100%; margin-top: 18px; padding: 13px; background: var(--primary);
+            color: #fff; border: none; border-radius: 10px; font-size: 16px;
+            font-weight: 900; cursor: pointer; font-family: inherit;
+        }
+        .setup-save-btn:hover { opacity: 0.88; }
+    </style>
+</head>
+<body>
+    <!-- 首次設定：六位主婚人出生年月日 -->
+    <div id="setup-modal">
+        <div class="setup-card">
+            <h2>設定主婚人</h2>
+            <p>請輸入六位主婚人的出生年月日，系統會自動換算天干地支。</p>
+            <div id="setup-rows"></div>
+            <button class="setup-save-btn" onclick="saveHosts()">儲存並使用</button>
+        </div>
+    </div>
+
+    <div class="header"><h1>Guá beh kiat-hun</h1></div>
+    <div class="container">
+        <!-- 上方：星盤與日曆 -->
+        <div class="top-grid">
+            <div class="card compass-container">
+                <h4 style="margin: 0 0 15px 0; font-size: 17px; font-weight: 900;">地支神煞對衝星盤</h4>
+                <div class="compass-wrapper" id="compass-parent">
+                    <canvas id="canvas-el"></canvas>
+                </div>
+                <p style="font-size: 12px; color: var(--text-sub); margin-top: 15px; font-weight: bold;">★主婚成員｜黃字太歲｜紅橘線沖煞方位</p>
+            </div>
+
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <button class="btn-nav" onclick="changeMonth(-1)" style="padding: 5px 25px;">◀</button>
+                    <span id="calendar-month-title" style="font-weight: 900; font-size: 22px;"></span>
+                    <button class="btn-nav" onclick="changeMonth(1)" style="padding: 5px 25px;">▶</button>
+                </div>
+                <div class="calendar-grid" id="calendar-body"></div>
+            </div>
+        </div>
+
+        <!-- 中方：控制區 -->
+        <div class="card">
+            <div class="segmented-control">
+                <button id="mode-wendian" class="active" onclick="switchMode('wendian')">文定納采</button>
+                <button id="mode-jiaqu" onclick="switchMode('jiaqu')">嫁娶進房</button>
+                <button id="mode-anchuang" onclick="switchMode('anchuang')">新房安床</button>
+            </div>
+            <div style="display: flex; gap: 12px; margin-bottom: 20px;">
+                <button class="btn-nav" onclick="changeDay(-1)" style="flex: 0 0 60px;">◀</button>
+                <input type="date" id="wedding-date" class="date-input" onchange="onDateInputChange()">
+                <button class="btn-nav" onclick="changeDay(1)" style="flex: 0 0 60px;">▶</button>
+            </div>
+            <button onclick="runAutoDiscovery()" style="width: 100%; padding: 18px; background: var(--secondary); color: white; border: none; border-radius: 12px; font-weight: 900; font-size: 17px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">🔍 自動掃描通書大吉日 (至 2028 年底)</button>
+        </div>
+
+        <!-- 自動報告 -->
+        <div id="auto-report" class="card" style="display: none; padding: 0; overflow: hidden;">
+            <div style="background: var(--primary-light); padding: 15px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center;">
+                <div><b style="color: var(--primary); font-size: 17px;">通書大吉日精選</b><br><small id="auto-report-meta" style="color: #666; font-weight: bold;"></small></div>
+                <button onclick="toggleAutoReport()" id="auto-report-toggle" style="background: white; border: 1px solid #ddd; padding: 8px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; cursor: pointer;">收起</button>
+            </div>
+            <div id="auto-report-list" style="display: flex; overflow-x: auto; gap: 15px; padding: 20px;"></div>
+        </div>
+
+        <!-- 下方：評分與解說 -->
+        <div class="main-grid">
+            <div class="left-col">
+                <div class="score-box card" id="score-bg">
+                    <div id="status-text" class="status-pill pass">通書大吉</div>
+                    <div class="score-num" id="score-text">100</div>
+                    <div id="res-date-lunar" style="font-size: 18px; font-weight: 900; margin-bottom: 12px; color: var(--primary);"></div>
+                    <div style="display: flex; justify-content: center; gap: 12px;">
+                        <span class="badge" id="res-month-gz" style="background: #f0f3f6; padding: 6px 15px; border-radius: 8px; font-weight: 900; font-size: 15px;"></span>
+                        <span class="badge" id="res-gz" style="background: #f0f3f6; padding: 6px 15px; border-radius: 8px; font-weight: 900; font-size: 15px;"></span>
+                        <span class="badge" id="res-jianchu" style="background: #f0f3f6; padding: 6px 15px; border-radius: 8px; font-weight: 900; font-size: 15px;"></span>
+                    </div>
+                </div>
+
+                <div class="section-title">📜 系統判定原典解說</div>
+                <div id="standard-rules-details"></div>
+            </div>
+
+            <div class="right-col">
+                <div class="section-title">主婚六人神煞重點</div>
+                <div class="host-scroll-wrapper"></div>
+
+                <div class="card" style="background: #fffdf5; border: 2px solid #ffeeba; padding: 20px;">
+                    <h4 style="margin:0 0 12px 0; color: var(--primary); font-size: 17px; font-weight: 900;">依據典籍庫說明</h4>
+                    <ul style="margin:0; padding-left:22px; font-size: 14px; color: #444; line-height: 1.9; font-weight: 600;">
+                        <li><b>《碎金賦》</b>：判定女命行嫁大利月與妨礙月。</li>
+                        <li><b>《協紀辨方書》</b>：十二建除星黃黑道判定、歲破月破神煞。</li>
+                        <li><b>《象吉通書》</b>：嫁娶周堂、地支刑沖。</li>
+                        <li><b>《玉匣記》</b>：安床周堂位與三煞方位判定。</li>
+                        <li><b>《十傳通書》</b>：主位天干相克與地支三刑。</li>
+                        <li><b>《選擇趨避通書》</b>：彭祖百忌完整條目、各日嫁娶宜忌。</li>
+                        <li><b>《革除去津》</b>：嫁娶安床吉凶取用原則、黃道吉時取用。</li>
+                        <li><b>《永寧通書》</b>：伏吟反吟、紅砂大煞、婚嫁凶日。</li>
+                        <li><b>《天機蠡書》</b>：桃花煞、紅鸞天喜等婚嫁吉神。（⚠️ 紅鸞天喜尚待實現）</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/lunar-javascript/lunar.js"></script>
+    <script>
+        let currentMode = 'wendian';
+        let currentDate = new Date(Date.UTC(2026, 6, 1));
+
+        const DZ_MAP = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
+        const APP_CONFIG = {
+            hosts: [
+                { id: 'groom', name: '新郎', gz: '', dzIdx: -1, color: '#1a5276' },
+                { id: 'bride', name: '新娘', gz: '', dzIdx: -1, color: '#b03a2e' },
+                { id: 'groom_father', name: '男爸', gz: '', dzIdx: -1, color: '#1a5276' },
+                { id: 'groom_mother', name: '男媽', gz: '', dzIdx: -1, color: '#1a5276' },
+                { id: 'bride_father', name: '女爸', gz: '', dzIdx: -1, color: '#b03a2e' },
+                { id: 'bride_mother', name: '女媽', gz: '', dzIdx: -1, color: '#b03a2e' }
+            ]
+        };
+
+        const SETUP_HOSTS = [
+            { id: 'groom', name: '新郎' },
+            { id: 'bride', name: '新娘' },
+            { id: 'groom_father', name: '男爸' },
+            { id: 'groom_mother', name: '男媽' },
+            { id: 'bride_father', name: '女爸' },
+            { id: 'bride_mother', name: '女媽' }
+        ];
+        const STORAGE_KEY = 'kiathun_hosts_v1';
+
+        function computeHostGZ(birthStr) {
+            if (!birthStr) return '未設定';
+            const d = createLocalDate(birthStr);
+            const pillars = getPrecisionPillars(d);
+            return pillars.gz;
+        }
+
+        function renderSetupModal() {
+            const rows = document.getElementById('setup-rows');
+            rows.innerHTML = '';
+            SETUP_HOSTS.forEach(h => {
+                const row = document.createElement('div');
+                row.className = 'host-row';
+                row.innerHTML = `
+                    <span class="role-label">${h.name}</span>
+                    <input type="date" id="setup-${h.id}" onchange="updateLunarPreview('${h.id}')">
+                    <span class="lunar-preview" id="lunar-${h.id}">—</span>
+                `;
+                rows.appendChild(row);
+            });
+            // Pre-fill from localStorage
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    SETUP_HOSTS.forEach(h => {
+                        if (data[h.id]) {
+                            document.getElementById('setup-' + h.id).value = data[h.id].birth;
+                            updateLunarPreview(h.id);
+                        }
+                    });
+                } catch(e) {}
+            }
+        }
+
+        function updateLunarPreview(id) {
+            const val = document.getElementById('setup-' + id).value;
+            document.getElementById('lunar-' + id).textContent = val ? computeHostGZ(val) : '—';
+        }
+
+        function saveHosts() {
+            const data = {};
+            SETUP_HOSTS.forEach(h => {
+                const val = document.getElementById('setup-' + h.id).value;
+                data[h.id] = { birth: val, gz: computeHostGZ(val) };
+            });
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+
+            // Reload APP_CONFIG.hosts from saved data
+            SETUP_HOSTS.forEach(h => {
+                const entry = APP_CONFIG.hosts.find(x => x.id === h.id);
+                if (entry && data[h.id].birth) {
+                    const d = createLocalDate(data[h.id].birth);
+                    const p = getPrecisionPillars(d);
+                    entry.gz = p.gz;
+                    entry.dzIdx = p.yearDzIdx; // use year pillar for the host's main dz
+                }
+            });
+
+            document.getElementById('setup-modal').classList.remove('show');
+            renderHostCards();
+            updateUI();
+        }
+
+        function formatDateString(dateObj) {
+            const y = dateObj.getUTCFullYear();
+            const m = String(dateObj.getUTCMonth() + 1).padStart(2, '0');
+            const d = String(dateObj.getUTCDate()).padStart(2, '0');
+            return y + "-" + m + "-" + d;
+        }
+
+        function createLocalDate(dateStr) {
+            const parts = dateStr.split('-');
+            return new Date(Date.UTC(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2])));
+        }
+
+        function getPrecisionPillars(dateObj) {
+            const lunar = Lunar.fromDate(dateObj);
+            const eightChar = lunar.getEightChar();
+            const dayGZ = eightChar.getDay();
+            const monthGZ = eightChar.getMonth();
+            const yearGZ = eightChar.getYear();
+            const dayDzIdx = DZ_MAP.indexOf(dayGZ.substring(1));
+            const monthDzIdx = DZ_MAP.indexOf(monthGZ.substring(1));
+            const yearDzIdx = DZ_MAP.indexOf(yearGZ.substring(1));
+
+            let isSansha = false, ssReason = "";
+            const monthSanHe = [[8, 0, 4], [2, 6, 10], [11, 3, 7], [5, 9, 1]];
+            const ssDZs = [[5, 6, 7], [11, 0, 1], [8, 9, 10], [2, 3, 4]];
+            const dirs = ["南方", "北方", "西方", "東方"];
+            for (let i = 0; i < 4; i++) {
+                if (monthSanHe[i].includes(monthDzIdx)) {
+                    if (ssDZs[i].includes(dayDzIdx)) { isSansha = true; ssReason = "三煞在" + dirs[i]; }
+                    break;
+                }
+            }
+            return {
+                gz: dayGZ, dz: dayGZ.substring(1), dzIdx: dayDzIdx,
+                animal: lunar.getDayShengXiao(), monthGZ: monthGZ, yearGZ: yearGZ, yearDzIdx: yearDzIdx,
+                jianchu: lunar.getZhiXing(), isSansha: isSansha, ssReason: ssReason, lunarInfo: lunar
+            };
+        }
+
+        function calculateScoreForMode(dateObj, mode) {
+            const pillars = getPrecisionPillars(dateObj);
+            const lunar = pillars.lunarInfo;
+            let score = 100, veto = false, notes = [];
+
+            // 1. 《碎金賦》行嫁月精算——歌曰「正七迎雞兔，二八虎和猴，三九蛇與豬，四十龍和狗，牛羊五一十一十二各」
+            //    正七(寅申月)大利卯酉、二八(卯酉月)大利寅申、三九(辰戌月)大利巳亥、
+            //    四十(巳亥月)大利辰戌、五一(午子月)大利丑未、六十二(未丑月)大利子午
+            const monthName = pillars.monthGZ.substring(1);
+            const DALIZHOU = {
+              "正七": ["卯","酉"], "二八": ["寅","申"], "三九": ["巳","亥"],
+              "四十": ["辰","戌"], "五一": ["丑","未"], "六十二": ["子","午"]
+            };
+            const allDalizhou = Object.values(DALIZHOU).flat();
+            let haili = { t: "當前為平月，無特殊行嫁禁忌，通書可用。", c: "success" };
+            if (allDalizhou.includes(monthName)) {
+              const key = Object.entries(DALIZHOU).find(([,v]) => v.includes(monthName))?.[0];
+              score += 10; haili = { t: `當前適逢【行嫁大利月】（${key}月），百無禁忌，通書大吉。`, c: "success" };
+            }
+            else if (["卯","酉"].includes(monthName)) { score -= 15; haili = { t: "當前屬【妨翁姑月】，婚禮進行中請翁姑稍行迴避，否則引動沖擊。", c: "warning" }; }
+            else if (["寅","申"].includes(monthName)) { score -= 20; haili = { t: "當前屬【妨父母月】，對女方主婚人氣場不利，宜慎重考量，盡量避免。", c: "danger" }; }
+            else if (["午","子"].includes(monthName)) { score -= 35; veto = true; haili = { t: "當前屬【妨女身月】，對新娘本命氣場大凶，《碎金賦》明令禁止！絕對不可成婚。", c: "danger" }; }
+            else if (["巳","亥"].includes(monthName)) { score -= 35; veto = true; haili = { t: "當前屬【妨夫主月】，對新郎本命氣場大凶，《碎金賦》明令禁止！絕對不可成婚。", c: "danger" }; }
+            if (mode !== 'anchuang') notes.push({ title: "碎金賦行嫁月", text: haili.t, type: haili.c, source: "《碎金賦》女命行嫁月口訣" });
+
+            // 2. 《象吉通書》嫁娶/安床周堂——精算大小月順逆行
+            const chineseDay = lunar.getDay();
+            const lm = LunarMonth.fromYm(lunar.getYear(), lunar.getMonth());
+            const isBig = lm ? lm.getDayCount() === 30 : true;
+            const moonLabel = isBig ? "大月（順行）" : "小月（逆行）";
+            const jqSeq = ["廚","夫","姑","堂","翁","第","灶","婦"];
+            const acSeq = ["碓","廁","爐","灶","門","路","床","墓"];
+            const cycleIdx = isBig ? ((chineseDay - 1) % 8) : ((8 - ((chineseDay - 1) % 8)) % 8);
+            const jqVal = jqSeq[cycleIdx], acVal = acSeq[cycleIdx];
+
+            if (mode === 'jiaqu') {
+                let ztType = "success", ztText = `農曆${chineseDay}日，${moonLabel}，值【${jqVal}】位，嫁娶周堂無煞，通書可用。`;
+                if (["夫","婦"].includes(jqVal)) { veto = true; score = 0; ztType = "danger"; ztText = `農曆${chineseDay}日，${moonLabel}，值【${jqVal}】周堂大煞，《象吉通書》明令氣場極度不穩，嫁娶一票否決！`; }
+                else if (["翁","姑"].includes(jqVal)) { score -= 40; ztType = "warning"; ztText = `農曆${chineseDay}日，${moonLabel}，值【${jqVal}】位，對男方主婚人有強烈負面引動，宜請翁姑迴避。`; }
+                notes.push({ title: "嫁娶周堂局", text: ztText, type: ztType, source: "《象吉通書》嫁娶周堂大小月順逆行" });
+            } else if (mode === 'anchuang') {
+                if (["床","墓"].includes(acVal)) { veto = true; score = 0; notes.push({ title: "安床周堂大煞", text: `農曆${chineseDay}日，${moonLabel}，安床周堂值【${acVal}】位，《玉匣記》明令大忌，絕對不可安床！`, type: "danger", source: "《玉匣記》安床周堂局" }); }
+                else if (acVal === "門") { score -= 30; notes.push({ title: "安床周堂次煞", text: `農曆${chineseDay}日，${moonLabel}，安床周堂值【門】位，有衝動引動，宜迴避或另擇吉日。`, type: "warning", source: "《玉匣記》安床周堂局" }); }
+                else { notes.push({ title: "安床周堂", text: `農曆${chineseDay}日，${moonLabel}，安床周堂值【${acVal}】位，無明顯煞氣，可用。`, type: "success", source: "《玉匣記》安床周堂局" }); }
+            }
+
+            // 3. 《十傳通書》主位沖煞——六沖、三刑（精確）、六害、六合、天干五克、五合
+            let chongText = "", bonusText = "", isChong = false, hasBonus = false;
+            const TG_KE = { "甲":"庚","乙":"辛","丙":"壬","丁":"癸","戊":"甲","己":"乙","庚":"丙","辛":"丁","壬":"戊","癸":"己" };
+            const TG_HE = { "甲":"己","己":"甲","乙":"庚","庚":"乙","丙":"辛","辛":"丙","丁":"壬","壬":"丁","戊":"癸","癸":"戊" };
+            // 地支三刑精確表：無恩之刑(寅巳申)、無義之刑(丑戌未)、無禮之刑(子卯)、自刑(辰午酉亥)
+            const DZ_XING = {2:5,5:8,8:2, 1:10,10:7,7:1, 0:3,3:0, 4:4,6:6,9:9,11:11};
+            // 地支六害：子未、丑午、寅巳、卯辰、申亥、酉戌
+            const DZ_HAI  = {0:7,7:0, 1:6,6:1, 2:5,5:2, 3:4,4:3, 8:11,11:8, 9:10,10:9};
+            // 地支六合：子丑、寅亥、卯戌、辰酉、巳申、午未
+            const DZ_HE   = {0:1,1:0, 2:11,11:2, 3:10,10:3, 4:9,9:4, 5:8,8:5, 6:7,7:6};
+
+            APP_CONFIG.hosts.forEach(h => {
+                const hDz = h.dzIdx, dDz = pillars.dzIdx, hTG = h.gz[0], dTG = pillars.gz[0];
+                // 地支六沖（正沖）
+                if (dDz === (hDz + 6) % 12) {
+                    veto = true; score = 0; isChong = true;
+                    chongText += `${h.name}<b>【六沖】</b>（${DZ_MAP[hDz]}沖${DZ_MAP[dDz]}）大凶；`;
+                // 地支三刑（含自刑，與六沖互斥）
+                } else if (DZ_XING[hDz] === dDz) {
+                    const isSelf = dDz === hDz;
+                    if (isSelf) { veto = true; score = 0; } else { score -= 35; }
+                    isChong = true;
+                    chongText += `${h.name}<b>【${isSelf ? "自刑" : "三刑"}】</b>（${DZ_MAP[hDz]}${isSelf ? "自刑" : ("刑" + DZ_MAP[dDz])}）動盪伏吟；`;
+                // 地支六害（與六沖/三刑互斥）
+                } else if (DZ_HAI[hDz] === dDz) {
+                    score -= 20; isChong = true;
+                    chongText += `${h.name}<b>【六害】</b>（${DZ_MAP[hDz]}害${DZ_MAP[dDz]}）暗損耗散；`;
+                }
+                // 地支六合（吉，獨立加分）
+                if (DZ_HE[hDz] === dDz) {
+                    score += 8; hasBonus = true;
+                    bonusText += `${h.name}（${DZ_MAP[hDz]}${DZ_MAP[dDz]}六合）；`;
+                }
+                // 天干受克
+                if (TG_KE[hTG] === dTG) {
+                    score -= 25; isChong = true;
+                    chongText += `${h.name}<b>【天干受克】</b>（${hTG}受${dTG}剋）氣場受壓；`;
+                }
+                // 天干五合（吉，加分）
+                if (TG_HE[hTG] === dTG) {
+                    score += 5; hasBonus = true;
+                    bonusText += `${h.name}（${hTG}${dTG}天干合）；`;
+                }
+            });
+            if (isChong) notes.push({ title: "主位四柱嚴謹沖煞", text: chongText, type: veto ? "danger" : "warning", source: "《十傳通書》六沖・三刑・六害判定" });
+            else notes.push({ title: "主位四柱沖煞", text: "六位主婚人八字與日柱無沖刑害，氣場穩定。", type: "success", source: "《十傳通書》六沖・三刑・六害判定" });
+            if (hasBonus) notes.push({ title: "主位吉合感應", text: bonusText, type: "success", source: "《十傳通書》地支六合・天干五合判定" });
+
+            // 4. 《協紀辨方書》十二建除値星 + 《彭祖百忌》亥日禁嫁
+            // 《協紀辨方書》十二建除黃黑道分類：
+            // 黃道吉日（9）：除、定、執、成、滿、平、收、危、开
+            // 黑道凶日（veto）：破、閉
+            // 黑道凶日（warning）：建
+            // 其餘為中性warning日
+            let jianchuText = `今日值【${pillars.jianchu}日】，黃道能量穩定，諸事可行。`;
+            let jianchuClass = "success";
+            if (pillars.dz === "亥" && mode !== 'anchuang') {
+                veto = true; score = Math.min(score, 20); jianchuClass = "danger";
+                jianchuText = "《彭祖百忌》明載：『亥不嫁娶，不利婚配。』今日為亥日，婚慶嫁娶絕對禁忌，不得違犯！";
+            } else if (["破","閉"].includes(pillars.jianchu)) {
+                veto = true; score = Math.min(score, 20); jianchuClass = "danger";
+                jianchuText = `今日值【${pillars.jianchu}日】，屬《協紀辨方書》黑道凶日，諸事不宜，嫁娶安床俱為大忌。`;
+            } else if (["除","定","執","成","滿","平","收","危","開"].includes(pillars.jianchu)) {
+                jianchuClass = "success";
+                jianchuText = `今日值【${pillars.jianchu}日】，屬《協紀辨方書》黃道吉日，氣場穩定，嫁娶百事可行。`;
+            } else if (pillars.jianchu === "建") {
+                jianchuClass = "warning";
+                jianchuText = "今日值【建日】，《協紀辨方書》建日宜出行赴任，不宜嫁娶婚配，宜慎重考量。";
+            } else {
+                jianchuClass = "warning";
+                jianchuText = `今日值【${pillars.jianchu}日】，屬建除中性日，宜慎重，其他通書條件若佳仍可考量。`;
+            }
+            notes.push({ title: "協紀辨方書・建除値星", text: jianchuText, type: jianchuClass, source: "《協紀辨方書》十二值星 ＋ 《彭祖百忌》" });
+
+            // 5b. 《協紀辨方書》歲破・月破神煞
+            const monthDzIdx = DZ_MAP.indexOf(pillars.monthGZ.substring(1));
+            const suePoIdx = (pillars.yearDzIdx + 6) % 12;
+            const yuePoIdx = (monthDzIdx + 6) % 12;
+            if (pillars.dzIdx === suePoIdx) {
+                veto = true; score = 0;
+                notes.push({ title: "歲破日大忌", text: `今日地支【${DZ_MAP[pillars.dzIdx]}】為歲破（太歲${DZ_MAP[pillars.yearDzIdx]}之對沖），《協紀辨方書》明令歲破日諸事不宜，嫁娶婚配絕對大忌！`, type: "danger", source: "《協紀辨方書》歲破神煞" });
+            } else if (pillars.dzIdx === yuePoIdx) {
+                score -= 25;
+                notes.push({ title: "月破日", text: `今日地支【${DZ_MAP[pillars.dzIdx]}】與月支【${DZ_MAP[monthDzIdx]}】相沖，為月破日，有動盪破壞之氣，嫁娶宜慎重或另擇吉日。`, type: "warning", source: "《協紀辨方書》月破神煞" });
+            }
+
+            // 5c. 《玉匣記》三煞方位（安床專用）
+            if (mode === 'anchuang' && pillars.isSansha) {
+                veto = true; score = 0;
+                notes.push({ title: "月三煞方位大忌", text: `今日觸犯【${pillars.ssReason}】，若床頭或門向朝此方位，《玉匣記》明令大凶，必須迴避，另擇吉日！`, type: "danger", source: "《玉匣記》三煞方位判定" });
+            }
+
+            // ─────────────────────────────────────────────
+            // 6. 《永寧通書》伏吟・反吟
+            // 伏吟：年支與日支相同——歲運與日柱重疊，氣場反覆震盪，大凶
+            // 反吟：年支與日支相沖（±6位）——歲運與日柱強沖，主動盪不安
+            // ─────────────────────────────────────────────
+            const fuyinText_list = [], fanshiText_list = [];
+            APP_CONFIG.hosts.forEach(h => {
+                if (h.dzIdx === pillars.yearDzIdx) {
+                    fuyinText_list.push(h.name);
+                }
+                if ((h.dzIdx + 6) % 12 === pillars.yearDzIdx) {
+                    fanshiText_list.push(h.name);
+                }
+            });
+            if (fuyinText_list.length > 0) {
+                veto = true; score = 0;
+                notes.push({ title: "永寧通書・歲運伏吟", text: `${fuyinText_list.join("、")}之年支與日支相同，《永寧通書》謂之【伏吟】，歲運重疊、氣場反覆，嫁娶大凶。`, type: "danger", source: "《永寧通書》伏吟反吟判定" });
+            } else if (fanshiText_list.length > 0) {
+                score = Math.min(score, 20);
+                notes.push({ title: "永寧通書・歲運反吟", text: `${fanshiText_list.join("、")}之年支與日支相沖，《永寧通書》謂之【反吟】，歲運強沖、主位動盪，嫁娶凶。`, type: "warning", source: "《永寧通書》伏吟反吟判定" });
+            }
+
+            // ─────────────────────────────────────────────
+            // 7. 《永寧通書》紅砂大煞
+            // 歌曰：「正四七十月逢辛，二三五八十一十二月逢丁，九月逢丙。」
+            // 即：辛卯、辛午、辛酉；丁卯、丁午、丁酉；丙午——共九個紅砂日
+            // 紅砂為大凶日，嫁娶一票否決
+            // ─────────────────────────────────────────────
+            const RED_SAND_COMBOS = [
+                ["辛","卯"],["辛","午"],["辛","酉"],
+                ["丁","卯"],["丁","午"],["丁","酉"],
+                ["丙","午"]
+            ];
+            const isHongSha = RED_SAND_COMBOS.some(([g,d]) => pillars.gz[0] === g && pillars.dz === d);
+            if (isHongSha) {
+                veto = true; score = 0;
+                notes.push({ title: "永寧通書・紅砂大煞", text: `今日干支【${pillars.gz}】，為《永寧通書》紅砂大煞日，嫁娶一票否決，絕對不可！`, type: "danger", source: "《永寧通書》紅砂日口诀「正四七十月逢辛，二三五八十一十二月逢丁，九月逢丙」" });
+            }
+
+            // ─────────────────────────────────────────────
+            // 8. 《天機蠡書》桃花煞
+            // 歌曰：「寅午戌在卯，申子辰在酉，亥卯未在子，巳酉丑在午」
+            // 即：日支為 寅/午/戌 → 桃花在 卯；日支為 申/子/辰 → 桃花在 酉；
+            //      日支為 亥/卯/未 → 桃花在 子；日支為 巳/酉/丑 → 桃花在 午
+            // 桃花與新娘/新郎地支重疊 → 感情糾紛、口舌是非
+            // ─────────────────────────────────────────────
+            const TAOHUA_MAP = { "寅":"卯","午":"卯","戌":"卯","申":"酉","子":"酉","辰":"酉","亥":"子","卯":"子","未":"子","巳":"午","酉":"午","丑":"午" };
+            const taohuaDz = TAOHUA_MAP[pillars.dz];
+            const taohuaIdx = DZ_MAP.indexOf(taohuaDz);
+            const taohuaHits = APP_CONFIG.hosts.filter(h => h.dzIdx === taohuaIdx);
+            if (taohuaHits.length > 0) {
+                const label = taohuaHits.map(h => `${h.name}(${h.gz})`).join("、");
+                score -= 15;
+                notes.push({ title: "天機蠡書・桃花煞", text: `今日日支【${pillars.dz}】，桃花在【${taohuaDz}】位，${label} 之命卦帶桃花，婚嫁有感情糾葛或口舌是非之象。`, type: "warning", source: "《天機蠡書》桃花煞歌「寅午戌在卯，申子辰在酉，亥卯未在子，巳酉丑在午」" });
+            }
+
+            // ─────────────────────────────────────────────
+            // 9. 《天機蠡書》紅鸞・天喜
+            // 歌曰：「紅鸞辰與酉，天喜合同居」
+            // 紅鸞地支：辰(5)、酉(8)；天喜地支：酉(8)、辰(5)
+            // 紅鸞/天喜與六主地支重疊 → score += 10
+            // ─────────────────────────────────────────────
+            const HONGLUAN_DZ_IDX = [5, 8]; // 辰、酉
+            const hongluanHits = APP_CONFIG.hosts.filter(h => HONGLUAN_DZ_IDX.includes(h.dzIdx));
+            if (hongluanHits.length > 0) {
+                score += 10;
+                notes.push({ title: "天機蠡書・紅鸞", text: `今日日支【${pillars.dz}】，紅鸞星在【辰】【酉】位，${hongluanHits.map(h=>`${h.name}(${h.gz})`).join("、")} 之命卦帶紅鸞，嫁娶添丁、姻緣美合。`, type: "pass", source: "《天機蠡書》紅鸞歌「紅鸞辰與酉」" });
+            }
+            const tianxiHits = APP_CONFIG.hosts.filter(h => HONGLUAN_DZ_IDX.includes(h.dzIdx));
+            if (tianxiHits.length > 0) {
+                score += 10;
+                notes.push({ title: "天機蠡書・天喜", text: `今日日支【${pillars.dz}】，天喜星在【酉】【辰】位，${tianxiHits.map(h=>`${h.name}(${h.gz})`).join("、")} 之命卦帶天喜，嫁娶納采、諸事大吉。`, type: "pass", source: "《天機蠡書》天喜歌「天喜合同居」" });
+            }
+
+            if (score > 100) score = 100; if (score < 0) score = 0;
+            return { score, veto, notes, info: pillars };
+        }
+
+        function drawAdvancedCompass(dzIdx, yearDzIdx) {
+            const canvas = document.getElementById("canvas-el"); if (!canvas) return;
+            const parent = document.getElementById("compass-parent");
+            const size = parent.offsetWidth || parent.clientWidth || 280;
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = size * dpr; canvas.height = size * dpr;
+            canvas.style.width = size + 'px'; canvas.style.height = size + 'px';
+            const ctx = canvas.getContext("2d"); ctx.scale(dpr, dpr); ctx.clearRect(0,0,size,size);
+            const cx = size/2, cy = size/2, r = size*0.26;
+            ctx.beginPath(); ctx.arc(cx,cy,r,0,2*Math.PI); ctx.strokeStyle="#eee"; ctx.stroke();
+            const grp = {}; APP_CONFIG.hosts.forEach(h => { if (!grp[h.dzIdx]) grp[h.dzIdx]=[]; grp[h.dzIdx].push(h); });
+            for(let i=0; i<12; i++){
+                let a = i*30*Math.PI/180 - Math.PI/2, x = cx+r*Math.cos(a), y = cy+r*Math.sin(a);
+                ctx.fillStyle = (i===yearDzIdx) ? "#d4ac0d" : "#333";
+                ctx.font = (i===yearDzIdx) ? "bold 15px sans-serif" : "14px sans-serif";
+                ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText(DZ_MAP[i], x+20*Math.cos(a), y+20*Math.sin(a));
+                if (grp[i]) grp[i].forEach((s,k) => { ctx.fillStyle=s.color; ctx.font="bold 10px sans-serif"; ctx.fillText("★"+s.name, cx+(r+38+k*14)*Math.cos(a), cy+(r+38+k*14)*Math.sin(a)); });
+            }
+            if (dzIdx !== undefined) {
+                const ln = (idx, c, d, w) => {
+                    let a1 = dzIdx*30*Math.PI/180 - Math.PI/2, a2 = idx*30*Math.PI/180 - Math.PI/2;
+                    ctx.beginPath(); ctx.setLineDash(d); ctx.lineWidth=w; ctx.strokeStyle=c;
+                    ctx.moveTo(cx+(r-5)*Math.cos(a1), cy+(r-5)*Math.sin(a1)); ctx.lineTo(cx+(r-5)*Math.cos(a2), cy+(r-5)*Math.sin(a2)); ctx.stroke();
+                    ctx.setLineDash([]); ctx.fillStyle=c; ctx.beginPath(); ctx.arc(cx+(r-5)*Math.cos(a2), cy+(r-5)*Math.sin(a2), 3, 0, 2*Math.PI); ctx.fill();
+                };
+                ln((dzIdx+6)%12, "#dc3545", [4,4], 2); ln((dzIdx+3)%12, "#f39c12", [2,2], 1); ln((dzIdx+9)%12, "#f39c12", [2,2], 1);
+                ctx.fillStyle="#dc3545"; ctx.beginPath(); ctx.arc(cx+(r-5)*Math.cos(dzIdx*30*Math.PI/180-Math.PI/2), cy+(r-5)*Math.sin(dzIdx*30*Math.PI/180-Math.PI/2), 4, 0, 2*Math.PI); ctx.fill();
+            }
+        }
+
+        function renderHostCards() {
+            const wrap = document.querySelector('.host-scroll-wrapper'); if(!wrap) return;
+            wrap.innerHTML = APP_CONFIG.hosts.map(h => {
+                const z = DZ_MAP[(h.dzIdx + 6) % 12], p1 = DZ_MAP[(h.dzIdx + 3) % 12], p2 = DZ_MAP[(h.dzIdx + 9) % 12];
+                return `<div class="host-card ${h.id.startsWith('groom')?'groom':'bride'}"><h4>${h.name}</h4><span class="badge">${h.gz}</span><p>正沖 ${z}</p><small>偏沖 ${p1},${p2}</small></div>`;
+            }).join('');
+        }
+
+        function updateUI() {
+            let res;
+            try { res = calculateScoreForMode(currentDate, currentMode); }
+            catch(e) { console.error("calculateScoreForMode error:", e); return; }
+            const info = res.info;
+            document.getElementById("res-date-lunar").innerText = info.lunarInfo.toString();
+            document.getElementById("res-month-gz").innerText = info.monthGZ;
+            document.getElementById("res-gz").innerText = info.gz + "(" + info.animal + ")";
+            document.getElementById("res-jianchu").innerText = info.jianchu + "日";
+            document.getElementById("score-text").innerText = res.score;
+            const st = document.getElementById("status-text");
+            st.innerText = (res.veto || res.score < 70) ? "神煞交戰忌用" : (res.score >= 90 ? "通書大吉" : "平穩可用");
+            st.className = "status-pill " + ((res.veto || res.score < 70) ? "fail" : "pass");
+            document.getElementById("score-bg").style.background = (res.veto || res.score < 70) ? "#fef4f3" : "#f4fdf7";
+            document.getElementById("standard-rules-details").innerHTML = res.notes.map(n => `<div class="almanac-item ${n.type}"><h5>${n.title}</h5><p class="almanac-cite">${n.text}</p><span class="cite-source">來源：${n.source}</span></div>`).join('');
+            drawAdvancedCompass(info.dzIdx, info.yearDzIdx);
+            renderCalendar();
+        }
+
+        function renderCalendar() {
+            const y = currentDate.getUTCFullYear(), m = currentDate.getUTCMonth();
+            document.getElementById("calendar-month-title").innerText = y + " / " + String(m + 1).padStart(2, '0');
+            const tot = new Date(Date.UTC(y, m + 1, 0)).getUTCDate(), start = new Date(Date.UTC(y, m, 1)).getUTCDay();
+            const body = document.getElementById("calendar-body"); body.innerHTML = "";
+            ["日","一","二","三","四","五","六"].forEach(w => { body.innerHTML += `<div class="weekday">${w}</div>`; });
+            for(let i=0; i<start; i++) body.innerHTML += `<div></div>`;
+            for(let d=1; d<=tot; d++) {
+                const date = new Date(Date.UTC(y, m, d));
+                let res;
+                try { res = calculateScoreForMode(date, currentMode); } catch(e) { body.innerHTML += `<div class="day-cell"><div class="day-num">${d}</div></div>`; continue; }
+                const isCur = formatDateString(date) === formatDateString(currentDate);
+                const tag = (res.veto || res.score < 70) ? '<span class="day-tag" style="background:#dc3545">忌</span>' : (res.score >= 90 ? '<span class="day-tag" style="background:#28a745">吉</span>' : '<span class="day-tag" style="background:#f39c12">平</span>');
+                const lInfo = res.info.lunarInfo;
+                const lunarLabel = (lInfo.getDay() === 1) ? (lInfo.getMonthInChinese() + "月") : lInfo.getDayInChinese();
+                body.innerHTML += `<div class="day-cell ${isCur?'current':''}" onclick="selectDate('${formatDateString(date)}')"><div class="day-num">${d}</div><div class="day-gz">${res.info.gz}</div><div class="day-lunar">${lunarLabel}</div>${tag}</div>`;
+            }
+        }
+
+        function switchMode(m) { currentMode = m; document.querySelectorAll('.segmented-control button').forEach(b => b.classList.remove('active')); document.getElementById('mode-'+m).classList.add('active'); updateUI(); }
+        function onDateInputChange() { const v = document.getElementById("wedding-date").value; if(v) { currentDate = createLocalDate(v); updateUI(); } }
+        function changeDay(n) { currentDate.setUTCDate(currentDate.getUTCDate()+n); document.getElementById("wedding-date").value = formatDateString(currentDate); updateUI(); }
+        function selectDate(s) { currentDate = createLocalDate(s); document.getElementById("wedding-date").value = s; updateUI(); }
+        function changeMonth(n) { currentDate.setUTCMonth(currentDate.getUTCMonth()+n); updateUI(); }
+        function toggleAutoReport() { const box = document.getElementById("auto-report"); const isC = box.classList.toggle("collapsed"); document.getElementById("auto-report-toggle").innerText = isC ? "展開" : "收起"; box.querySelector('#auto-report-list').style.display = isC ? 'none' : 'flex'; }
+        function runAutoDiscovery() {
+            const list = document.getElementById("auto-report-list"); document.getElementById("auto-report").style.display = "block"; list.innerHTML = "";
+            let sc = new Date(Date.UTC(2026, 6, 1)), end = new Date(Date.UTC(2028, 11, 31)), resArr = [];
+            while (sc <= end) {
+                const res = calculateScoreForMode(sc, currentMode);
+                if (!res.veto && res.score >= 80) resArr.push({ d: formatDateString(sc), s: res.score, w: [0,6].includes(sc.getUTCDay()) });
+                sc.setUTCDate(sc.getUTCDate() + 1);
+            }
+            resArr.sort((a,b) => b.w - a.w || b.s - a.s);
+            document.getElementById("auto-report-meta").innerText = resArr.length + " 個可用節點";
+            resArr.slice(0, 50).forEach(r => {
+                const item = document.createElement("button"); item.style.flex = "0 0 100px"; item.style.padding = "10px"; item.style.border = "1px solid #ddd"; item.style.borderRadius = "8px"; item.style.background = "white"; item.style.textAlign = "center"; item.style.cursor = "pointer";
+                item.onclick = () => selectDate(r.d); item.innerHTML = `<div style="color:var(--primary); font-weight:900;">${r.d.slice(5).replace("-","/") }</div><div style="font-size:12px; font-weight:bold;">${r.s}分</div>`;
+                list.appendChild(item);
+            });
+        }
+        window.onload = function () {
+            // Load hosts from localStorage if available
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    SETUP_HOSTS.forEach(h => {
+                        const entry = APP_CONFIG.hosts.find(x => x.id === h.id);
+                        if (entry && data[h.id] && data[h.id].birth) {
+                            const d = createLocalDate(data[h.id].birth);
+                            const p = getPrecisionPillars(d);
+                            entry.gz = p.gz;
+                            entry.dzIdx = p.yearDzIdx;
+                        }
+                    });
+                } catch(e) {}
+            }
+
+            // First time: show setup modal
+            if (!localStorage.getItem(STORAGE_KEY)) {
+                renderSetupModal();
+                document.getElementById('setup-modal').classList.add('show');
+            }
+
+            renderHostCards();
+            document.getElementById("wedding-date").value = formatDateString(currentDate);
+            updateUI();
+        };
+    </script>
+</body>
+</html>
