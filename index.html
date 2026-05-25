@@ -311,7 +311,7 @@
     <script src="https://cdn.jsdelivr.net/npm/lunar-javascript/lunar.js"></script>
     <script>
         let currentMode = 'wendian';
-        let currentDate = new Date(Date.UTC(2026, 6, 1));
+        let currentDate = new Date();
 
         const DZ_MAP = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
         const APP_CONFIG = {
@@ -425,7 +425,7 @@
             html += `<select id="roc-month" onchange="onRocPickerChange()">`;
             for (let mm = 1; mm <= 12; mm++) {
                 const sel = (mm === m + 1) ? ' selected' : '';
-                html += `<option value="${mm}">${mm}月</option>`;
+                html += `<option value="${mm}"${sel}>${mm}月</option>`;
             }
             html += `</select>`;
             // 日
@@ -433,7 +433,7 @@
             html += `<select id="roc-day" onchange="onRocPickerChange()">`;
             for (let dd = 1; dd <= daysInMonth; dd++) {
                 const sel = (dd === d) ? ' selected' : '';
-                html += `<option value="${dd}">${dd}日</option>`;
+                html += `<option value="${dd}"${sel}>${dd}日</option>`;
             }
             html += `</select>`;
             html += '</div>';
@@ -525,7 +525,7 @@
             daySel.innerHTML = '';
             for (let dd = 1; dd <= daysInMonth; dd++) {
                 const sel = (dd === newCur) ? ' selected' : '';
-                daySel.innerHTML += `<option value="${dd}">${dd}日</option>`;
+                daySel.innerHTML += `<option value="${dd}"${sel}>${dd}日</option>`;
             }
         }
 
