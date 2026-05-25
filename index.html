@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Guá beh kiat-hun</title>
+    <title>我欲結婚</title>
     <style>
         :root {
             --primary: #8b1e0f;
@@ -200,7 +200,7 @@
         </div>
     </div>
 
-    <div class="header"><h1>Guá beh kiat-hun</h1></div>
+    <div class="header"><h1>我欲結婚</h1></div>
     <div class="container">
         <!-- 上方：星盤與日曆 -->
         <div class="top-grid">
@@ -317,7 +317,7 @@
             if (!birthStr) return '未設定';
             const d = createLocalDate(birthStr);
             const pillars = getPrecisionPillars(d);
-            return pillars.gz;
+            return pillars.yearGZ;  // 主婚人需年柱，不是日柱
         }
 
         function renderSetupModal() {
@@ -367,8 +367,8 @@
                 if (entry && data[h.id].birth) {
                     const d = createLocalDate(data[h.id].birth);
                     const p = getPrecisionPillars(d);
-                    entry.gz = p.gz;
-                    entry.dzIdx = p.yearDzIdx; // use year pillar for the host's main dz
+                    entry.gz = p.yearGZ;  // 存年柱
+                    entry.dzIdx = p.yearDzIdx;
                 }
             });
 
@@ -741,7 +741,7 @@
                         if (entry && data[h.id] && data[h.id].birth) {
                             const d = createLocalDate(data[h.id].birth);
                             const p = getPrecisionPillars(d);
-                            entry.gz = p.gz;
+                            entry.gz = data[h.id].gz;  // 用當時存的年柱，不要重新算日柱
                             entry.dzIdx = p.yearDzIdx;
                         }
                     });
