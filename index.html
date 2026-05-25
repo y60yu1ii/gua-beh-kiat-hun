@@ -138,7 +138,15 @@
 
         /* 按鈕與輸入 */
         .btn-nav { background: #f0f2f5; border: 1px solid #ddd; border-radius: 10px; padding: 12px; font-weight: 900; cursor: pointer; }
-        .date-input { flex: 1; padding: 12px; border: 1px solid #ccc; border-radius: 10px; font-size: 18px; text-align: center; font-weight: 900; color: var(--primary); }
+        .date-input { display: none; }
+        .roc-picker { display: flex; flex-direction: column; gap: 8px; }
+        .roc-picker-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+        .roc-picker select { flex:1; padding:12px 6px; border:1.5px solid #ccc; border-radius:10px; font-size:16px; font-weight:900; color:var(--primary); background:white; font-family:inherit; cursor:pointer; -webkit-appearance:none; appearance:none; text-align:center; }
+        .roc-picker select:focus { border-color:var(--primary); outline:none; }
+        .roc-picker .lunar-preview-bar { display:flex; align-items:center; gap:8px; }
+        .roc-picker .lunar-preview-bar .lunar-summary { flex:1; padding:10px 12px; background:var(--primary-light); border:1.5px solid #ccc; border-radius:10px; font-size:14px; font-weight:900; color:var(--primary); }
+        .roc-picker .lunar-preview-bar .toggle-btn { padding:10px 14px; background:#f0f2f5; border:1.5px solid #ccc; border-radius:10px; font-size:13px; font-weight:900; cursor:pointer; color:#666; white-space:nowrap; font-family:inherit; }
+        .roc-picker .toggle-btn.active { background:var(--primary); color:white; border-color:var(--primary); }
 
         @media (min-width: 900px) {
             .main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
@@ -235,10 +243,14 @@
                 <button id="mode-jiaqu" onclick="switchMode('jiaqu')">嫁娶進房</button>
                 <button id="mode-anchuang" onclick="switchMode('anchuang')">新房安床</button>
             </div>
-            <div style="display: flex; gap: 12px; margin-bottom: 20px;">
+            <div style="display: flex; gap: 12px; margin-bottom: 12px; align-items: center;">
                 <button class="btn-nav" onclick="changeDay(-1)" style="flex: 0 0 60px;">◀</button>
-                <input type="date" id="wedding-date" class="date-input" onchange="onDateInputChange()">
+                <div class="roc-picker" id="roc-picker" style="flex:1;"></div>
                 <button class="btn-nav" onclick="changeDay(1)" style="flex: 0 0 60px;">▶</button>
+            </div>
+            <div id="lunar-preview-bar" class="lunar-preview-bar" style="margin-bottom: 20px; display:none;">
+                <span class="lunar-summary" id="lunar-summary-text"></span>
+                <span class="toggle-btn active" id="toggle-roc" onclick="toggleDateSystem()">切換<span id="toggle-year-label">西元年</span></span>
             </div>
             <button onclick="runAutoDiscovery()" style="width: 100%; padding: 18px; background: var(--secondary); color: white; border: none; border-radius: 12px; font-weight: 900; font-size: 17px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">🔍 自動掃描通書大吉日 (至 2028 年底)</button>
         </div>
@@ -386,6 +398,89 @@
         function openSetupModal() {
             renderSetupModal();
             document.getElementById('setup-modal').classList.add('show');
+        }
+
+        function toROC(dateObj) { return dateObj.getUTCFullYear() - 1911; }
+        function fromROC(rocYear, month, day) { return new Date(Date.UTC(rocYear + 1911, month, day)); }
+
+        function buildRocPicker() {
+            const picker = document.getElementById('roc-picker');
+            if (!picker) return;
+            const y = currentDate.getUTCFullYear();
+            const m = currentDate.getUTCMonth();
+            const d = currentDate.getUTCDate();
+            const rocY = toROC(currentDate);
+
+            let html = '<div class="roc-picker-row">';
+            // 年（西元）
+            html += `<select id="roc-year" onchange="onRocPickerChange()">`;
+            for (let yy = 1950; yy <= 2030; yy++) {
+                const sel = (yy === y) ? ' selected' : '';
+                html += `<option value="${yy}"${sel}>${yy}年</option>`;
+            }
+            html += `</select>`;
+            // 月（西元數字）
+            html += `<select id="roc-month" onchange="onRocPickerChange()">`;
+            for (let mm = 1; mm <= 12; mm++) {
+                const sel = (mm === m + 1) ? ' selected' : '';
+                html += `<option value="${mm}">${mm}月</option>`;
+            }
+            html += `</select>`;
+            // 日
+            const daysInMonth = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+            html += `<select id="roc-day" onchange="onRocPickerChange()">`;
+            for (let dd = 1; dd <= daysInMonth; dd++) {
+                const sel = (dd === d) ? ' selected' : '';
+                html += `<option value="${dd}">${dd}日</option>`;
+            }
+            html += `</select>`;
+            html += '</div>';
+            picker.innerHTML = html;
+
+            // 顯示農曆 bar
+            const bar = document.getElementById('lunar-preview-bar');
+            const lunar = Lunar.fromDate(currentDate);
+            document.getElementById('lunar-summary-text').innerHTML =
+                `<span style="color:#666;font-weight:normal;">農曆 </span>${lunar.getMonthInChinese()}月${lunar.getDayInChinese()}<span style="margin-left:12px;color:#666;font-weight:normal;">歲次 </span>${lunar.getYearInChinese()}`;
+            bar.style.display = 'flex';
+            updateToggleBtn();
+        }
+
+        function onRocPickerChange() {
+            const y = parseInt(document.getElementById('roc-year').value);
+            const m = parseInt(document.getElementById('roc-month').value) - 1;
+            const d = parseInt(document.getElementById('roc-day').value);
+            currentDate = new Date(Date.UTC(y, m, d));
+            updateUI();
+            updateRocDayOptions();
+        }
+
+        function updateRocDayOptions() {
+            const y = parseInt(document.getElementById('roc-year').value);
+            const m = parseInt(document.getElementById('roc-month').value) - 1;
+            const daysInMonth = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+            const daySel = document.getElementById('roc-day');
+            const curDay = parseInt(daySel.value);
+            const newCur = Math.min(curDay, daysInMonth);
+            daySel.innerHTML = '';
+            for (let dd = 1; dd <= daysInMonth; dd++) {
+                const sel = (dd === newCur) ? ' selected' : '';
+                daySel.innerHTML += `<option value="${dd}"${sel}>${dd}日</option>`;
+            }
+        }
+
+        function toggleDateSystem() {
+            const btn = document.getElementById('toggle-roc');
+            const isRoc = btn.classList.contains('active');
+            btn.classList.toggle('active', !isRoc);
+            updateToggleBtn();
+        }
+
+        function updateToggleBtn() {
+            const btn = document.getElementById('toggle-roc');
+            const label = document.getElementById('toggle-year-label');
+            const isRoc = btn.classList.contains('active');
+            label.textContent = isRoc ? '西元年' : '民國年';
         }
 
         function clearHosts() {
@@ -707,6 +802,7 @@
             document.getElementById("standard-rules-details").innerHTML = res.notes.map(n => `<div class="almanac-item ${n.type}"><h5>${n.title}</h5><p class="almanac-cite">${n.text}</p><span class="cite-source">來源：${n.source}</span></div>`).join('');
             drawAdvancedCompass(info.dzIdx, info.yearDzIdx);
             renderCalendar();
+            buildRocPicker();
         }
 
         function renderCalendar() {
@@ -730,8 +826,8 @@
 
         function switchMode(m) { currentMode = m; document.querySelectorAll('.segmented-control button').forEach(b => b.classList.remove('active')); document.getElementById('mode-'+m).classList.add('active'); updateUI(); }
         function onDateInputChange() { const v = document.getElementById("wedding-date").value; if(v) { currentDate = createLocalDate(v); updateUI(); } }
-        function changeDay(n) { currentDate.setUTCDate(currentDate.getUTCDate()+n); document.getElementById("wedding-date").value = formatDateString(currentDate); updateUI(); }
-        function selectDate(s) { currentDate = createLocalDate(s); document.getElementById("wedding-date").value = s; updateUI(); }
+        function changeDay(n) { currentDate.setUTCDate(currentDate.getUTCDate()+n); updateUI(); }
+        function selectDate(s) { currentDate = createLocalDate(s); updateUI(); }
         function changeMonth(n) { currentDate.setUTCMonth(currentDate.getUTCMonth()+n); updateUI(); }
         function toggleAutoReport() { const box = document.getElementById("auto-report"); const isC = box.classList.toggle("collapsed"); document.getElementById("auto-report-toggle").innerText = isC ? "展開" : "收起"; box.querySelector('#auto-report-list').style.display = isC ? 'none' : 'flex'; }
         function runAutoDiscovery() {
