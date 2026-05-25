@@ -196,7 +196,10 @@
             <h2>設定主婚人</h2>
             <p>請輸入六位主婚人的出生年月日，系統會自動換算天干地支。</p>
             <div id="setup-rows"></div>
-            <button class="setup-save-btn" onclick="saveHosts()">儲存並使用</button>
+            <div style="display:flex;gap:10px;margin-top:12px;">
+                <button class="setup-save-btn" onclick="saveHosts()" style="flex:1;background:var(--primary);">儲存並使用</button>
+                <button onclick="clearHosts()" style="flex:0 0 auto;padding:13px 18px;background:#f0f2f5;border:1.5px solid #ccc;border-radius:10px;font-size:15px;font-weight:900;cursor:pointer;color:#666;font-family:inherit;">清除記錄</button>
+            </div>
         </div>
     </div>
 
@@ -373,6 +376,20 @@
             });
 
             document.getElementById('setup-modal').classList.remove('show');
+            renderHostCards();
+            updateUI();
+        }
+
+        function clearHosts() {
+            if (!confirm('確定要清除所有主婚人記錄嗎？清除後將重新設定。')) return;
+            localStorage.removeItem(STORAGE_KEY);
+            SETUP_HOSTS.forEach(h => {
+                const entry = APP_CONFIG.hosts.find(x => x.id === h.id);
+                if (entry) { entry.gz = ''; entry.dzIdx = -1; }
+            });
+            document.getElementById('setup-modal').classList.remove('show');
+            renderSetupModal();
+            document.getElementById('setup-modal').classList.add('show');
             renderHostCards();
             updateUI();
         }
