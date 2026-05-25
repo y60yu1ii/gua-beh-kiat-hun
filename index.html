@@ -193,7 +193,7 @@
     <!-- 首次設定：六位主婚人出生年月日 -->
     <div id="setup-modal">
         <div class="setup-card">
-            <h2>設定主婚人</h2>
+            <h2>編輯主婚人</h2>
             <p>請輸入六位主婚人的出生年月日，系統會自動換算天干地支。</p>
             <div id="setup-rows"></div>
             <div style="display:flex;gap:10px;margin-top:12px;">
@@ -205,7 +205,7 @@
 
     <div class="header" style="display:flex;align-items:center;justify-content:space-between;padding:12px 15px;">
         <h1 style="margin:0;font-size:22px;font-weight:900;letter-spacing:2px;">我欲結婚</h1>
-        <button onclick="clearHosts()" style="padding:6px 14px;background:rgba(255,255,255,0.2);border:1.5px solid rgba(255,255,255,0.5);border-radius:8px;font-size:13px;font-weight:900;cursor:pointer;color:white;font-family:inherit;">清除主婚人</button>
+        <button onclick="openSetupModal()" style="padding:6px 14px;background:rgba(255,255,255,0.2);border:1.5px solid rgba(255,255,255,0.5);border-radius:8px;font-size:13px;font-weight:900;cursor:pointer;color:white;font-family:inherit;">編輯主婚人</button>
     </div>
     <div class="container">
         <!-- 上方：星盤與日曆 -->
@@ -381,6 +381,11 @@
             document.getElementById('setup-modal').classList.remove('show');
             renderHostCards();
             updateUI();
+        }
+
+        function openSetupModal() {
+            renderSetupModal();
+            document.getElementById('setup-modal').classList.add('show');
         }
 
         function clearHosts() {
