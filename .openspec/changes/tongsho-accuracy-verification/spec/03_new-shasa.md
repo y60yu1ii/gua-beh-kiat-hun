@@ -12,28 +12,28 @@
 
 ### 伏吟・反吟（《永寧通書》）
 
-**Before:** 無此邏輯
+**Before:** 只比對 `h.dzIdx === pillars.yearDzIdx`（1/12機率，某主婚人年年碰觸即永久veto）
 
-**After:** 在 `calculateScoreForMode` 第6節新增：
+**After:** 伏吟：流年柱干支（`pillars.yearGZ`）= 主婚人年柱干支（`h.gz`），干支皆同才成立
 ```javascript
-// 6. 《永寧通書》伏吟・反吟
-const fuyinText_list = [], fanshiText_list = [];
-APP_CONFIG.hosts.forEach(h => {
-    if (h.dzIdx === pillars.yearDzIdx) {
-        fuyinText_list.push(h.name);  // 伏吟：年支與日支相同 → veto
-    }
-    if ((h.dzIdx + 6) % 12 === pillars.yearDzIdx) {
-        fanshiText_list.push(h.name);  // 反吟：年支與日支相沖 → score=20
-    }
-});
-if (fuyinText_list.length > 0) {
-    veto = true; score = 0;
-    notes.push({ title: "永寧通書・歲運伏吟", ... });
-} else if (fanshiText_list.length > 0) {
-    score = Math.min(score, 20);
-    notes.push({ title: "永寧通書・歲運反吟", ... });
+if (h.gz === pillars.yearGZ) {
+    fuyinText_list.push(h.name);  // 伏吟：干支完全相同 → veto
 }
 ```
+
+反吟：地支相沖（+6位）+ 天干相剋（金木相戰：天干索引差4或6位）
+```javascript
+const hDz = DZ_MAP.indexOf(h.gz.substring(1));
+const dDz = DZ_MAP.indexOf(pillars.yearGZ.substring(1));
+if ((hDz + 6) % 12 === dDz) {
+    const diff = Math.abs(TG_IDX.indexOf(h.gz[0]) - TG_IDX.indexOf(pillars.yearGZ[0]));
+    if (diff === 4 || diff === 6) {
+        fanshiText_list.push(h.name);  // 反吟：沖且剋 → score≤20
+    }
+}
+```
+
+**Status:** ✅ Corrected (2026-05-25)
 
 ### 紅砂大煞（《永寧通書》）
 
